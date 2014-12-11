@@ -55,8 +55,6 @@ void getColor(uint16_t value, char *color, size_t length) {
   snprintf(color,length,"\033[38;5;%d;48;5;%dm",*foreground,*background);
 }
 
-// Draws board on screen, needs to be heavily modified
-// NOT OK (printf)
 void drawBoard(uint16_t board[SIZE][SIZE]) {
   int8_t x,y;
   int arr[x][y];
@@ -70,53 +68,10 @@ void drawBoard(uint16_t board[SIZE][SIZE]) {
     }
   }
 
-  
-    // ANSI escape sequences? Old school. All useless now, replace with proper GD library usage
-   	char color[40], reset[] = "\033[m";
-   	//printf("\033[H");
-   
-   	//printf("2048.c %17d pts\n\n",score);
-/*   
-   	for (y=0;y<SIZE;y++) {
-   // Top of square drawing
-   		for (x=0;x<SIZE;x++) {
-   			getColor(board[x][y],color,40);
-   			printf("%s",color);
-   			printf("       ");
-   			printf("%s",reset);
-   		}
-   // Actual value drawing (otherwise blank)
-   		printf("\n");
-   		for (x=0;x<SIZE;x++) {
-   			getColor(board[x][y],color,40);
-   			printf("%s",color);
-   			if (board[x][y]!=0) {
-   				char s[8];
-   				snprintf(s,8,"%u",board[x][y]);
-   				int8_t t = 7-strlen(s);
-   				printf("%*s%s%*s",t-t/2,"",s,t/2,"");
-   			} else {
-   				printf("   ·   ");
-   			}
-   			printf("%s",reset);
-   		}
-   		printf("\n");
-   // Bottom of square drawing
-   		for (x=0;x<SIZE;x++) {
-   			getColor(board[x][y],color,40);
-   			printf("%s",color);
-   			printf("       ");
-   			printf("%s",reset);
-   		}
-   		printf("\n");
-   	}
-   	printf("\n");
-   	printf("        ←,↑,→,↓ or q        \n");
-   	printf("\033[A");
-  
-  */ 
 
 GD.Clear();
+GD.Begin(BITMAPS);
+GD.Vertex2ii(0,0,0);
 
   for (y=0;y<SIZE;y++) 
       {
@@ -127,13 +82,14 @@ GD.Clear();
            snprintf(test,8,"%u",board[x][y]);
            if(board[x][y] != 0 )
              {
-             GD.cmd_text((x*100)+30, (y*50)+30, 31, OPT_CENTER, test);
+             GD.cmd_text((x*100)+50, (y*50)+25, 31, OPT_CENTER, test);
              }
            snprintf(score2,8,"%u",score);
            GD.cmd_text(150, 240, 31, OPT_CENTER, "Score: "); 
            GD.cmd_text(270, 240, 31, OPT_CENTER, score2);           
            }
      }
+     
 
 GD.swap();
 
@@ -328,55 +284,15 @@ void addRandom(uint16_t board[SIZE][SIZE]) {
 }
 
 
-// I'm assuming this saves a command into a buffer list. Probably can be cut with proper modifcations in main
-/*
-void setBufferedInput(bool enable) {
- 	static bool enabled = true;
- 	static struct termios old;
- 	struct termios new;
- 
- 	if (enable && !enabled) {
- 		// restore the former settings
- 		tcsetattr(STDIN_FILENO,TCSANOW,&old);
- 		// set the new state
- 		enabled = true;
- 	} else if (!enable && enabled) {
- 		// get the terminal settings for standard input
- 		tcgetattr(STDIN_FILENO,&new);
- 		// we want to keep the old setting to restore them at the end
- 		old = new;
- 		// disable canonical mode (buffered i/o) and local echo
- 		new.c_lflag &=(~ICANON & ~ECHO);
- 		// set the new settings immediately
- 		tcsetattr(STDIN_FILENO,TCSANOW,&new);
- 		// set the new state
- 		enabled = false;
- 	}
- }
- */
 
-// Looks like this handles a ctrl-c situation. Should be able to be cut without issue
-// NOT OK
-/*
-void signal_callback_handler(int signum) {
- 	printf("         TERMINATED         \n");
- 	setBufferedInput(true);
- 	printf("\033[?25h");
- 	exit(signum);
- }
- */
-
-// Needs to be modified for arduino setup/loop structure. No intial arguments, so choices made in setup
-// Should just loop the game process. Show game over screen, and then restart
-// High score saved through sessions?
-// NOT OK
-/*int main(int argc, char *argv[]) {
- 
- }*/
 
 void setup()
 {
   GD.begin();
+  GD.BitmapHandle(0);
+  GD.cmd_loadimage(0,0);
+  GD.load("g5.jpg");  
+
 }
 
 
@@ -387,8 +303,10 @@ void loop()
   GD.Clear();
   GD.cmd_text(240, 136, 31, OPT_CENTER, "2048: Embedded");
   GD.swap();
-  delay(3000);
+  
 
+
+  delay(3000);
 
 
 
@@ -396,35 +314,17 @@ void loop()
   char c;
   bool success;
 
-  // Checks for different color scheme. No way to set on run, so pick one and go with it
-  /*
-	if (argc == 2 && strcmp(argv[1],"blackwhite")==0) {
-   		scheme = 1;
-   	}
-   	if (argc == 2 && strcmp(argv[1],"bluered")==0) {
-   		scheme = 2;
-   	}
-   */
-
-  printf("\033[?25l\033[2J\033[H");
-
-  // register signal handler for when ctrl-c is pressed
-  // Remove this
-  // signal(SIGINT, signal_callback_handler);
-
   memset(board,0,sizeof(board));
   addRandom(board);
   addRandom(board);
   drawBoard(board);
-  //setBufferedInput(false);
+
 
   // Must be modified with on screen directionals
   // Region of screen touch? That's easy. Maybe have swiping from zone to zone?
   while (true) {
-    //c=getchar();
     // Retrieve Touch Inputs
     GD.get_inputs();
-    //GD.Clear();
 
     // Test for screen location
     if(GD.inputs.x > 0) // Test for any touch
